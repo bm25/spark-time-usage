@@ -53,4 +53,14 @@ class TimeUsageSuite {
     assert(df.count() == 12, "there should be 12 rows in final dataset")
     assert(df.columns.size == 6, "there should be 12 rows in final dataset")
   }
+
+  @Test def `'timeUsageGroupedSql' should return 12 rows of 6 columns`: Unit = {
+    assert(initializeTimeUsage(), " -- initialization failed")
+    val (primaryNeedsColumns, workColumns, otherColumns) = classifiedColumns(columns)
+
+    var df = timeUsageSummary(primaryNeedsColumns, workColumns, otherColumns, initDf)
+    df = timeUsageGroupedSql(df)
+    assert(df.count() == 12, "there should be 12 rows in final dataset")
+    assert(df.columns.size == 6, "there should be 12 rows in final dataset")
+  }
 }

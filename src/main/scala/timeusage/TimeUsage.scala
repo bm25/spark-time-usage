@@ -33,11 +33,6 @@ object TimeUsage extends TimeUsageInterface {
 
   def timeUsageByLifePeriod(): Unit = {
     //val (columns, initDf) = read("src/main/resources/timeusage/atussum.csv")
-
-    /*
-    val fields = columns.map(fieldName => StructField(fieldName, DoubleType, nullable = true))
-    val schema = StructType(fields)
-     */
     val (primaryNeedsColumns, workColumns, otherColumns) = classifiedColumns(columns)
     val summaryDf = timeUsageSummary(primaryNeedsColumns, workColumns, otherColumns, initDf)
     val finalDf = timeUsageGrouped(summaryDf)
@@ -144,55 +139,6 @@ object TimeUsage extends TimeUsageInterface {
     // Hint: you can use the `when` and `otherwise` Spark functions
     // Hint: don’t forget to give your columns the expected name with the `as` method
 
-    /*
-    val workingStatusProjection: Column = initDf
-      .withColumn("working",
-          when(col("telfs") >= 1 && col("telfs") < 3, "working")
-         .otherwise("not working"))
-      .col("working")
-      .as("working")
-
-    val sexProjection: Column = initDf
-      .withColumn("sex",
-        when(col("tesex") === "1", "male")
-          .otherwise("female"))
-      .col("sex")
-      .as("sex")
-
-    val ageProjection: Column = initDf
-      .withColumn("age",
-        expr("case " +
-          "when (teage >= 15 and teage <= 22) then 'young' " +
-          "when (teage >= 23 and teage <= 55) then 'active' " +
-          "else 'elder' end")
-      )
-      .col("age")
-      .as("age")
-
-    // Create columns that sum columns of the initial dataset
-    // Hint: you want to create a complex column expression that sums other columns
-    //       by using the `+` operator between them
-    // Hint: don’t forget to convert the value to hours
-    val primaryNeedsProjection: Column = initDf.select(primaryNeedsColumns: _*)
-      .withColumn("totalPrimaryNeedsInMinutes", primaryNeedsColumns.reduce((c1, c2) => c1 + c2))
-      .withColumn("primaryNeeds", expr("totalPrimaryNeedsInMinutes/60"))
-      .col("primaryNeeds")
-      .as("primaryNeeds")
-
-    val workProjection: Column = initDf.select(workColumns: _*)
-      .withColumn("totalWorkColumnsInMinutes", workColumns.reduce((c1, c2) => c1 + c2))
-      .withColumn("work", expr("totalWorkColumnsInMinutes/60"))
-      .col("work")
-      .as("work")
-
-    val otherProjection: Column = initDf.select(otherColumns: _*)
-      .withColumn("totalOtherColumnsInMinutes", otherColumns.reduce((c1, c2) => c1 + c2))
-      .withColumn("other", expr("totalOtherColumnsInMinutes/60"))
-      .col("other")
-      .as("other")
-
-     */
-
     initDf
       .withColumn("working",
         when(col("telfs") >= 1 && col("telfs") < 3, "working")
@@ -207,12 +153,8 @@ object TimeUsage extends TimeUsageInterface {
           "else 'elder' end")
       )
       .withColumn("primaryNeeds", primaryNeedsColumns.reduce((c1, c2) => c1 + c2).as[Double] / 60)
-      //.withColumn("primaryNeeds", expr("totalPrimaryNeedsInMinutes/60"))
       .withColumn("work", workColumns.reduce((c1, c2) => c1 + c2).as[Double] / 60)
-      //.withColumn("work", expr("totalWorkColumnsInMinutes/60"))
       .withColumn("other", otherColumns.reduce((c1, c2) => c1 + c2).as[Double] / 60)
-      //.withColumn("other", expr("totalOtherColumnsInMinutes/60"))
-      //.select(workingStatusProjection, sexProjection, ageProjection, primaryNeedsProjection, workProjection, otherProjection)
       .select("working","sex","age","primaryNeeds","work","other")
       .where($"telfs" <= 4) // Discard people who are not in labor force
   }
@@ -254,7 +196,10 @@ object TimeUsage extends TimeUsageInterface {
     * @param viewName Name of the SQL view to use
     */
   def timeUsageGroupedSqlQuery(viewName: String): String =
-    ???
+    "SELECT working, sex, age, round(avg(primaryNeeds), 1) as primaryNeeds, round(avg(work), 1) as work, round(avg(other), 1) as other " +
+      "FROM summed " +
+      "GROUP BY working, sex, age " +
+      "ORDER BY working, sex, age"
 
   /**
     * @return A `Dataset[TimeUsageRow]` from the “untyped” `DataFrame`
