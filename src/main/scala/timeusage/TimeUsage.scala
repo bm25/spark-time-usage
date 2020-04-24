@@ -1,6 +1,7 @@
 package timeusage
 
 import org.apache.spark.sql._
+import org.apache.spark.sql.functions.when
 import org.apache.spark.sql.types._
 
 import scala.collection.mutable.ListBuffer
@@ -142,19 +143,77 @@ object TimeUsage extends TimeUsageInterface {
     // more sense for our use case
     // Hint: you can use the `when` and `otherwise` Spark functions
     // Hint: don’t forget to give your columns the expected name with the `as` method
-    val workingStatusProjection: Column = ???
-    val sexProjection: Column = ???
-    val ageProjection: Column = ???
+
+    /*
+    val workingStatusProjection: Column = initDf
+      .withColumn("working",
+          when(col("telfs") >= 1 && col("telfs") < 3, "working")
+         .otherwise("not working"))
+      .col("working")
+      .as("working")
+
+    val sexProjection: Column = initDf
+      .withColumn("sex",
+        when(col("tesex") === "1", "male")
+          .otherwise("female"))
+      .col("sex")
+      .as("sex")
+
+    val ageProjection: Column = initDf
+      .withColumn("age",
+        expr("case " +
+          "when (teage >= 15 and teage <= 22) then 'young' " +
+          "when (teage >= 23 and teage <= 55) then 'active' " +
+          "else 'elder' end")
+      )
+      .col("age")
+      .as("age")
 
     // Create columns that sum columns of the initial dataset
     // Hint: you want to create a complex column expression that sums other columns
     //       by using the `+` operator between them
     // Hint: don’t forget to convert the value to hours
-    val primaryNeedsProjection: Column = ???
-    val workProjection: Column = ???
-    val otherProjection: Column = ???
-    df
-      .select(workingStatusProjection, sexProjection, ageProjection, primaryNeedsProjection, workProjection, otherProjection)
+    val primaryNeedsProjection: Column = initDf.select(primaryNeedsColumns: _*)
+      .withColumn("totalPrimaryNeedsInMinutes", primaryNeedsColumns.reduce((c1, c2) => c1 + c2))
+      .withColumn("primaryNeeds", expr("totalPrimaryNeedsInMinutes/60"))
+      .col("primaryNeeds")
+      .as("primaryNeeds")
+
+    val workProjection: Column = initDf.select(workColumns: _*)
+      .withColumn("totalWorkColumnsInMinutes", workColumns.reduce((c1, c2) => c1 + c2))
+      .withColumn("work", expr("totalWorkColumnsInMinutes/60"))
+      .col("work")
+      .as("work")
+
+    val otherProjection: Column = initDf.select(otherColumns: _*)
+      .withColumn("totalOtherColumnsInMinutes", otherColumns.reduce((c1, c2) => c1 + c2))
+      .withColumn("other", expr("totalOtherColumnsInMinutes/60"))
+      .col("other")
+      .as("other")
+
+     */
+
+    initDf
+      .withColumn("working",
+        when(col("telfs") >= 1 && col("telfs") < 3, "working")
+          .otherwise("not working"))
+      .withColumn("sex",
+        when(col("tesex") === "1", "male")
+          .otherwise("female"))
+      .withColumn("age",
+        expr("case " +
+          "when (teage >= 15 and teage <= 22) then 'young' " +
+          "when (teage >= 23 and teage <= 55) then 'active' " +
+          "else 'elder' end")
+      )
+      .withColumn("primaryNeeds", primaryNeedsColumns.reduce((c1, c2) => c1 + c2).as[Double] / 60)
+      //.withColumn("primaryNeeds", expr("totalPrimaryNeedsInMinutes/60"))
+      .withColumn("work", workColumns.reduce((c1, c2) => c1 + c2).as[Double] / 60)
+      //.withColumn("work", expr("totalWorkColumnsInMinutes/60"))
+      .withColumn("other", otherColumns.reduce((c1, c2) => c1 + c2).as[Double] / 60)
+      //.withColumn("other", expr("totalOtherColumnsInMinutes/60"))
+      //.select(workingStatusProjection, sexProjection, ageProjection, primaryNeedsProjection, workProjection, otherProjection)
+      .select("working","sex","age","primaryNeeds","work","other")
       .where($"telfs" <= 4) // Discard people who are not in labor force
   }
 
@@ -176,7 +235,9 @@ object TimeUsage extends TimeUsageInterface {
     * Finally, the resulting DataFrame should be sorted by working status, sex and age.
     */
   def timeUsageGrouped(summed: DataFrame): DataFrame = {
-    ???
+    summed.groupBy($"working", $"sex", $"age")
+      .agg(round(avg("primaryNeeds"), 1).as("primaryNeeds"), round(avg("work"), 1).as("work"), round(avg("other"), 1).as("other"))
+      .orderBy($"working", $"sex", $"age")
   }
 
   /**
