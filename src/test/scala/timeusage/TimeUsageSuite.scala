@@ -33,22 +33,20 @@ class TimeUsageSuite {
   @Test def `'timeUsageSummary' should return total time per row equal to 24 hours`: Unit = {
     assert(initializeTimeUsage(), " -- initialization failed")
     val (primaryNeedsColumns, workColumns, otherColumns) = classifiedColumns(columns)
-
-    val df = timeUsageSummary(primaryNeedsColumns, workColumns, otherColumns, null)
-    val countOfRowsWithIncorrectTotalTimePerDay = df
+    val df = timeUsageSummary(primaryNeedsColumns, workColumns, otherColumns, initDf)
+    val dfOfIncorrectTotalTimePerDay = df
           .withColumn("sumTimeUsagePerRow", expr("primaryNeeds + work + other"))
-          .select("sumTimeUsagePerRow")
-          .where("(sumTimeUsagePerRow >= 24.1 or sumTimeUsagePerRow <= 23.9)")
-          .count()
+          .where("(sumTimeUsagePerRow <= 0 or sumTimeUsagePerRow >= 24.1)")
 
-    assert(countOfRowsWithIncorrectTotalTimePerDay == 0, "There are rows with incorrect total time per day ")
+    dfOfIncorrectTotalTimePerDay.show()
+
+    assert(dfOfIncorrectTotalTimePerDay.count() == 0, "There are rows with probably incorrect total time per day ")
   }
 
   @Test def `'timeUsageGrouped' should return 12 rows of 6 columns`: Unit = {
     assert(initializeTimeUsage(), " -- initialization failed")
     val (primaryNeedsColumns, workColumns, otherColumns) = classifiedColumns(columns)
-
-    var df = timeUsageSummary(primaryNeedsColumns, workColumns, otherColumns, null)
+    var df = timeUsageSummary(primaryNeedsColumns, workColumns, otherColumns, initDf)
     df = timeUsageGrouped(df)
     assert(df.count() == 12, "there should be 12 rows in final dataset")
     assert(df.columns.size == 6, "there should be 12 rows in final dataset")
@@ -57,10 +55,20 @@ class TimeUsageSuite {
   @Test def `'timeUsageGroupedSql' should return 12 rows of 6 columns`: Unit = {
     assert(initializeTimeUsage(), " -- initialization failed")
     val (primaryNeedsColumns, workColumns, otherColumns) = classifiedColumns(columns)
-
     var df = timeUsageSummary(primaryNeedsColumns, workColumns, otherColumns, initDf)
     df = timeUsageGroupedSql(df)
     assert(df.count() == 12, "there should be 12 rows in final dataset")
     assert(df.columns.size == 6, "there should be 12 rows in final dataset")
+  }
+
+  @Test def `'timeUsageGroupedTyped' should return 12 rows of 6 columns`: Unit = {
+    assert(initializeTimeUsage(), " -- initialization failed")
+    val (primaryNeedsColumns, workColumns, otherColumns) = classifiedColumns(columns)
+    val df = timeUsageSummary(primaryNeedsColumns, workColumns, otherColumns, initDf)
+    var ds = timeUsageSummaryTyped(df)
+    ds = timeUsageGroupedTyped(ds)
+    ds.show()
+    assert(ds.count() == 12, "there should be 12 rows in final dataset")
+    assert(ds.columns.size == 6, "there should be 12 rows in final dataset")
   }
 }

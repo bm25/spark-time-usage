@@ -67,7 +67,35 @@ The columns describing the work status, the sex and the age, will contain simpli
 
 Last, people that are not employable will be filtered out of the resulting dataset.
 
-The comment on top of the timeUsageSummary method will give you more specific information about what is expected in each column.
+The comment on top of the timeUsageSummary method will give you more specific information about what is expected in each column. 
+
+Below are top 20 rows of a typical dataframe returned by timeUsageSummary:
+
++-----------+------+------+------------------+------------------+------------------+
+|    working|   sex|   age|      primaryNeeds|              work|             other|
++-----------+------+------+------------------+------------------+------------------+
+|    working|  male| elder|             15.25|               0.0|              8.75|
+|    working|female|active|13.833333333333334|               0.0|10.166666666666666|
+|    working|female|active|11.916666666666666|               0.0|12.083333333333334|
+|not working|female|active|13.083333333333334|               2.0| 8.916666666666666|
+|    working|  male|active|11.783333333333333| 8.583333333333334|3.6333333333333333|
+|    working|female|active|              17.0|               0.0|               7.0|
+|    working|female|active|12.783333333333333| 8.566666666666666|              2.65|
+|    working|female| young|               9.0| 9.083333333333334| 5.916666666666667|
+|    working|female|active|13.166666666666666|               0.0|10.833333333333334|
+|    working|female|active| 6.683333333333334|               4.5|12.816666666666666|
+|    working|  male|active| 9.833333333333334|12.133333333333333| 2.033333333333333|
+|    working|female|active|12.416666666666666|               0.0|11.583333333333334|
+|    working|female|active|11.633333333333333| 6.333333333333333| 6.033333333333333|
+|    working|female|active|             12.15|               9.0|              2.85|
+|    working|female|active|             13.75|              0.75|               9.5|
+|    working|female|active|11.166666666666666|1.0833333333333333|             11.75|
+|    working|female| young|11.416666666666666|               0.0|12.583333333333334|
+|    working|female|active|              15.8|               0.0|               8.2|
+|    working|  male|active| 9.666666666666666|11.616666666666667| 2.716666666666667|
+|    working|female|active|              12.1| 7.966666666666667| 3.933333333333333|
++-----------+------+------+------------------+------------------+------------------+
+
 
 Aggregate
 Finally, we want to compare the average time spent on each activity, for all the combinations of working status, sex and age.
@@ -91,3 +119,21 @@ Implement the timeUsageSummaryTyped method to convert a DataFrame returned by ti
 
 Then, implement the timeUsageGroupedTyped method that performs the same query as timeUsageGrouped but uses typed APIs as much as possible. Note that not all the operations have a typed equivalent. round is an example of operations that has no typed equivalent: it will return a Column that you will have to turn into a TypedColumn by calling .as[Double]. Another example is orderBy, which has no typed equivalent. Make sure your Dataset has a schema because this operation requires one (column names are generally lost when using typed transformations).
 
+All 3 versions of timeUsageGrouped method (untyped, sql, typed) should return the same  set of 12 rows:
+
++-----------+------+------+------------+----+-----+
+|    working|   sex|   age|primaryNeeds|work|other|
++-----------+------+------+------------+----+-----+
+|not working|female|active|        12.4| 0.5| 10.8|
+|not working|female| elder|        10.9| 0.4| 12.4|
+|not working|female| young|        12.5| 0.2| 11.1|
+|not working|  male|active|        11.4| 0.9| 11.4|
+|not working|  male| elder|        10.7| 0.7| 12.3|
+|not working|  male| young|        11.6| 0.2| 11.9|
+|    working|female|active|        11.5| 4.2|  8.1|
+|    working|female| elder|        10.6| 3.9|  9.3|
+|    working|female| young|        11.6| 3.3|  8.9|
+|    working|  male|active|        10.8| 5.2|  7.8|
+|    working|  male| elder|        10.4| 4.8|  8.6|
+|    working|  male| young|        10.9| 3.7|  9.2|
++-----------+------+------+------------+----+-----+

@@ -78,15 +78,12 @@ object TimeUsage extends TimeUsageInterface {
     columnNames.foreach(columnName => {
       columnName match {
         case s if s.matches(primaryNeedsRegex) => {
-          println("case-1: columnName = " + columnName);
           primaryNeeds += initDf.col(columnName)
         }
         case s if s.matches(workingActivitiesRegex) => {
-          println("case-2: columnName = " + columnName)
           workingActivities += initDf.col(columnName);
         }
         case s if s.matches(leisureRegex) => {
-          println("case-3: columnName = " + columnName)
           leisure += initDf.col(columnName);
         }
         case _ => {
@@ -139,7 +136,7 @@ object TimeUsage extends TimeUsageInterface {
     // Hint: you can use the `when` and `otherwise` Spark functions
     // Hint: don’t forget to give your columns the expected name with the `as` method
 
-    initDf
+    df
       .withColumn("working",
         when(col("telfs") >= 1 && col("telfs") < 3, "working")
           .otherwise("not working"))
@@ -208,8 +205,10 @@ object TimeUsage extends TimeUsageInterface {
     * Hint: you should use the `getAs` method of `Row` to look up columns and
     * cast them at the same time.
     */
-  def timeUsageSummaryTyped(timeUsageSummaryDf: DataFrame): Dataset[TimeUsageRow] =
-    ???
+  def timeUsageSummaryTyped(timeUsageSummaryDf: DataFrame): Dataset[TimeUsageRow] = {
+    val encoder = org.apache.spark.sql.Encoders.product[TimeUsageRow]
+    timeUsageSummaryDf.as(encoder)
+  }
 
   /**
     * @return Same as `timeUsageGrouped`, but using the typed API when possible
@@ -224,7 +223,16 @@ object TimeUsage extends TimeUsageInterface {
     */
   def timeUsageGroupedTyped(summed: Dataset[TimeUsageRow]): Dataset[TimeUsageRow] = {
     import org.apache.spark.sql.expressions.scalalang.typed
-    ???
+    summed
+      .groupByKey(row => (row.working, row.sex, row.age))
+      .agg(
+        round(typed.avg[TimeUsageRow](_.primaryNeeds),1).as[Double],
+        round(typed.avg[TimeUsageRow](_.work),1).as[Double],
+        round(typed.avg[TimeUsageRow](_.other),1).as[Double]
+      )
+      //.toDF("productId", "sum")
+      .map(row => TimeUsageRow(row._1._1, row._1._2, row._1._3, row._2, row._3, row._4))
+      .orderBy("working", "sex","age")
   }
 }
 
