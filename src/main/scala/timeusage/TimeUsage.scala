@@ -1,6 +1,6 @@
 package timeusage
 
-import org.apache.spark.sql._
+import org.apache.spark.sql.{DataFrame, _}
 import org.apache.spark.sql.functions.when
 import org.apache.spark.sql.types._
 
@@ -20,10 +20,31 @@ object TimeUsage extends TimeUsageInterface {
       .master("local")
       .getOrCreate()
 
-  val (columns, initDf) = read("src/main/resources/timeusage/atussum.csv")
+  private var columns: List[String] = null
+  private var initDf: DataFrame = null
 
   // For implicit conversions like converting RDDs to DataFrames
   import spark.implicits._
+
+  def getColumns: List[String] = {
+    if (columns == null) {
+      val readCsv = read("src/main/resources/timeusage/atussum.csv")
+      columns = readCsv._1
+      initDf = readCsv._2
+    }
+
+    columns
+  }
+
+  def getInitDf: DataFrame = {
+    if (initDf == null) {
+      val readCsv = read("src/main/resources/timeusage/atussum.csv")
+      columns = readCsv._1
+      initDf = readCsv._2
+    }
+
+    initDf
+  }
 
   /** Main function */
   def main(args: Array[String]): Unit = {
@@ -32,9 +53,8 @@ object TimeUsage extends TimeUsageInterface {
   }
 
   def timeUsageByLifePeriod(): Unit = {
-    //val (columns, initDf) = read("src/main/resources/timeusage/atussum.csv")
-    val (primaryNeedsColumns, workColumns, otherColumns) = classifiedColumns(columns)
-    val summaryDf = timeUsageSummary(primaryNeedsColumns, workColumns, otherColumns, initDf)
+    val (primaryNeedsColumns, workColumns, otherColumns) = classifiedColumns(getColumns)
+    val summaryDf = timeUsageSummary(primaryNeedsColumns, workColumns, otherColumns, getInitDf)
     val finalDf = timeUsageGrouped(summaryDf)
     finalDf.show()
   }
@@ -74,17 +94,18 @@ object TimeUsage extends TimeUsageInterface {
     var primaryNeeds = new ListBuffer[Column]()
     var workingActivities = new ListBuffer[Column]()
     var leisure = new ListBuffer[Column]()
+    val df = getInitDf
 
     columnNames.foreach(columnName => {
       columnName match {
         case s if s.matches(primaryNeedsRegex) => {
-          primaryNeeds += initDf.col(columnName)
+          primaryNeeds += df.col(columnName)
         }
         case s if s.matches(workingActivitiesRegex) => {
-          workingActivities += initDf.col(columnName);
+          workingActivities += df.col(columnName);
         }
         case s if s.matches(leisureRegex) => {
-          leisure += initDf.col(columnName);
+          leisure += df.col(columnName);
         }
         case _ => {
           println("case-4: No matching for columnName = " + columnName)
