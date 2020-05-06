@@ -16,7 +16,6 @@ object TimeUsage extends TimeUsageInterface {
   val PATH_TO_DATA = "src/main/resources/timeusage/atussum.csv"
   val PATH_TO_RES_COLUMN_NAMES = "/timeusage/column-names.csv"
   val COLUMN_NAMES = readColumnNamesFromString(COMMA_SEPARATED_COLUMNS)
-  //val COLUMN_NAMES = readColumnNamesFromFile(PATH_TO_RES_COLUMN_NAMES)
 
   val spark: SparkSession =
     SparkSession

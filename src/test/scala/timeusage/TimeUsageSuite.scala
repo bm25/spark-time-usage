@@ -1,8 +1,7 @@
 package timeusage
 
 import org.apache.spark.sql.functions.expr
-import org.apache.spark.sql.{ColumnName, DataFrame, Row}
-import org.junit.{Assert, Test}
+import org.junit.Test
 
 class TimeUsageSuite {
 
@@ -18,10 +17,6 @@ class TimeUsageSuite {
     }
 
   import TimeUsage._
-
-  //object DefaultDf {
-  //  val df: DataFrame = read(PATH_TO_DATA)._2
-  //}
 
   @Test def `'classifiedColumns' should return 3 lists of columns`: Unit = {
     assert(initializeTimeUsage(), " -- initialization failed")
